@@ -94,6 +94,113 @@
     --progress-bg: 0 0% 18%;
     --progress-fill: 30 20% 70%;
   }
+
+  /* Ocean */
+  [data-color="ocean"] {
+    --primary: 200 47% 33%;
+    --accent: 200 30% 51%;
+    --accent-hover: 200 47% 25%;
+    --ring: 200 47% 33%;
+    --progress-fill: 200 47% 33%;
+    --success: 170 35% 45%;
+  }
+  .dark[data-color="ocean"] {
+    --primary: 200 30% 51%;
+    --accent-hover: 200 30% 63%;
+    --ring: 200 30% 51%;
+    --progress-fill: 200 30% 51%;
+  }
+
+  /* Forest */
+  [data-color="forest"] {
+    --primary: 130 20% 30%;
+    --accent: 130 15% 49%;
+    --accent-hover: 130 20% 21%;
+    --ring: 130 20% 30%;
+    --progress-fill: 130 20% 30%;
+    --success: 120 22% 45%;
+  }
+  .dark[data-color="forest"] {
+    --primary: 130 15% 49%;
+    --accent-hover: 130 15% 59%;
+    --ring: 130 15% 49%;
+    --progress-fill: 130 15% 49%;
+  }
+
+  /* Lavender */
+  [data-color="lavender"] {
+    --primary: 258 25% 47%;
+    --accent: 258 25% 66%;
+    --accent-hover: 258 25% 35%;
+    --ring: 258 25% 47%;
+    --progress-fill: 258 25% 47%;
+  }
+  .dark[data-color="lavender"] {
+    --primary: 258 25% 66%;
+    --accent-hover: 258 25% 76%;
+    --ring: 258 25% 66%;
+    --progress-fill: 258 25% 66%;
+  }
+
+  /* Sunset */
+  [data-color="sunset"] {
+    --primary: 10 50% 53%;
+    --accent: 10 65% 71%;
+    --accent-hover: 10 50% 44%;
+    --ring: 10 50% 53%;
+    --progress-fill: 10 50% 53%;
+  }
+  .dark[data-color="sunset"] {
+    --primary: 10 65% 71%;
+    --accent-hover: 10 65% 79%;
+    --ring: 10 65% 71%;
+    --progress-fill: 10 65% 71%;
+  }
+
+  /* Slate */
+  [data-color="slate"] {
+    --primary: 215 19% 35%;
+    --accent: 215 16% 47%;
+    --accent-hover: 215 25% 27%;
+    --ring: 215 19% 35%;
+    --progress-fill: 215 19% 35%;
+  }
+  .dark[data-color="slate"] {
+    --primary: 215 16% 47%;
+    --accent-hover: 215 16% 63%;
+    --ring: 215 16% 47%;
+    --progress-fill: 215 16% 47%;
+  }
+
+  /* Rose */
+  [data-color="rose"] {
+    --primary: 335 37% 55%;
+    --accent: 335 50% 71%;
+    --accent-hover: 335 37% 44%;
+    --ring: 335 37% 55%;
+    --progress-fill: 335 37% 55%;
+  }
+  .dark[data-color="rose"] {
+    --primary: 335 50% 71%;
+    --accent-hover: 335 50% 80%;
+    --ring: 335 50% 71%;
+    --progress-fill: 335 50% 71%;
+  }
+
+  /* Amber */
+  [data-color="amber"] {
+    --primary: 38 92% 44%;
+    --accent: 45 91% 52%;
+    --accent-hover: 30 92% 38%;
+    --ring: 38 92% 44%;
+    --progress-fill: 38 92% 44%;
+  }
+  .dark[data-color="amber"] {
+    --primary: 45 91% 52%;
+    --accent-hover: 45 91% 62%;
+    --ring: 45 91% 52%;
+    --progress-fill: 45 91% 52%;
+  }
 }
 
 @layer base {
