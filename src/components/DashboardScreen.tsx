@@ -1,0 +1,90 @@
+import { Lightbulb, Target, Sprout, Sparkles, Gem } from "lucide-react";
+
+const stats = [
+  { value: "23", label: "Dias de jornada" },
+  { value: "7", label: "Sequência atual" },
+  { value: "12", label: "Ações completas" },
+  { value: "4", label: "Insights gerados" },
+];
+
+const mapNodes = [
+  { icon: Lightbulb, style: "top-5 left-[30px]", delay: "0s" },
+  { icon: Target, style: "top-[60px] right-10", delay: "0.3s", accent: true },
+  { icon: Sprout, style: "bottom-[30px] left-[50px]", delay: "0.6s" },
+  { icon: Sparkles, style: "bottom-10 right-[30px]", delay: "0.9s", success: true },
+];
+
+const insights = [
+  {
+    title: "Você é um construtor de pontes",
+    text: "Suas conversas revelam uma habilidade natural de conectar ideias e pessoas. Você se energiza facilitando colaborações e compartilhando conhecimento.",
+    date: "Descoberto há 2 dias",
+  },
+  {
+    title: "Aprendizado como combustível",
+    text: "Você menciona aprendizado em 80% das suas respostas. Crescimento contínuo não é apenas importante para você - é essencial para sua satisfação.",
+    date: "Descoberto há 5 dias",
+  },
+];
+
+const DashboardScreen = () => (
+  <div className="animate-fade-in pb-[100px]">
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] w-full bg-card p-5 border-b border-border z-50">
+      <h2 className="font-serif text-[28px] font-normal mb-1">Sua Jornada</h2>
+      <p className="text-sm text-muted-foreground">Visualize seu progresso e insights</p>
+    </div>
+
+    <div className="pt-[100px] px-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        {stats.map(({ value, label }) => (
+          <div
+            key={label}
+            className="bg-tertiary p-6 rounded-[20px] text-center transition-transform duration-300 hover:-translate-y-1"
+          >
+            <div className="text-[32px] font-semibold text-primary mb-1">{value}</div>
+            <div className="text-[13px] text-muted-foreground">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Purpose Map */}
+      <div className="bg-tertiary p-7 rounded-3xl mb-8">
+        <h3 className="font-serif text-[22px] font-normal mb-5">Mapa de Propósito</h3>
+        <div className="relative h-[200px] bg-card rounded-2xl p-5 overflow-hidden">
+          {mapNodes.map(({ icon: Icon, style, delay, accent, success }, i) => (
+            <div
+              key={i}
+              className={`absolute w-[60px] h-[60px] rounded-full flex items-center justify-center text-primary-foreground animate-pulse-node ${style} ${
+                accent ? "bg-primary" : success ? "bg-success" : "bg-accent"
+              }`}
+              style={{ animationDelay: delay }}
+            >
+              <Icon size={28} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Insights */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">
+          <Gem size={20} className="text-primary" />
+          Insights Descobertos
+        </h3>
+        {insights.map(({ title, text, date }) => (
+          <div
+            key={title}
+            className="bg-tertiary p-5 rounded-2xl mb-3 border-l-4 border-primary transition-transform duration-300 hover:translate-x-1"
+          >
+            <div className="font-semibold mb-2 text-[15px] font-sans">{title}</div>
+            <div className="text-sm text-muted-foreground leading-relaxed">{text}</div>
+            <div className="text-xs text-text-tertiary mt-2">{date}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+export default DashboardScreen;
