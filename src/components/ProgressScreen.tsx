@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Target, Zap, Check } from "lucide-react";
+import { playCompletion } from "@/lib/sounds";
 
 const initialGoals = [
   {
@@ -28,6 +29,10 @@ const ProgressScreen = () => {
   const [goals, setGoals] = useState(initialGoals);
 
   const toggleAction = (goalIdx: number, actionIdx: number) => {
+    const action = goals[goalIdx]?.actions[actionIdx];
+    if (action && !action.done) {
+      playCompletion();
+    }
     setGoals((prev) =>
       prev.map((g, gi) =>
         gi === goalIdx
