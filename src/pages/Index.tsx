@@ -5,6 +5,7 @@ import DashboardScreen from "@/components/DashboardScreen";
 import ProgressScreen from "@/components/ProgressScreen";
 import ProfileScreen from "@/components/ProfileScreen";
 import BottomNav from "@/components/BottomNav";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type Screen = "onboarding" | "chat" | "dashboard" | "progress" | "profile";
 
@@ -15,6 +16,7 @@ const Index = () => {
 
   return (
     <div className="max-w-[430px] mx-auto bg-card min-h-screen relative shadow-[0_0_60px_rgba(0,0,0,0.06)]">
+      <ThemeToggle />
       {screen === "onboarding" && <OnboardingScreen onStart={() => setScreen("chat")} />}
       {screen === "chat" && <ChatScreen />}
       {screen === "dashboard" && <DashboardScreen />}
