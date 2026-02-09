@@ -1,4 +1,6 @@
 import CompassLogo from "./CompassLogo";
+import { useEffect } from "react";
+import { playHeartbeat } from "@/lib/sounds";
 
 interface OnboardingScreenProps {
   onStart: () => void;
@@ -10,7 +12,17 @@ const steps = [
   { num: 3, title: "Ações concretas", desc: "Receba um passo prático por dia" },
 ];
 
-const OnboardingScreen = ({ onStart }: OnboardingScreenProps) => (
+const OnboardingScreen = ({ onStart }: OnboardingScreenProps) => {
+  useEffect(() => {
+    const handleClick = () => {
+      playHeartbeat();
+      window.removeEventListener("click", handleClick);
+    };
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
+  }, []);
+
+  return (
   <div className="px-8 pt-16 pb-10 text-center min-h-screen flex flex-col justify-between">
     <div className="flex-1 flex flex-col justify-center animate-slide-up">
       <CompassLogo />
@@ -44,6 +56,7 @@ const OnboardingScreen = ({ onStart }: OnboardingScreenProps) => (
       Começar jornada
     </button>
   </div>
-);
+  );
+};
 
 export default OnboardingScreen;
