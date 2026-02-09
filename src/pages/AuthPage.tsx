@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Compass, ArrowLeft } from "lucide-react";
+import { Compass, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type View = "login" | "signup" | "forgot" | "reset";
@@ -12,6 +12,7 @@ const AuthPage = ({ defaultView }: { defaultView?: View }) => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
@@ -96,15 +97,24 @@ const AuthPage = ({ defaultView }: { defaultView?: View }) => {
           />
         )}
         {(view === "login" || view === "signup" || view === "reset") && (
-          <input
-            type="password"
-            placeholder={view === "reset" ? "Nova senha" : "Senha"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="py-3.5 px-5 border border-border rounded-full bg-tertiary text-foreground text-[15px] font-sans focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={view === "reset" ? "Nova senha" : "Senha"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full py-3.5 px-5 pr-12 border border-border rounded-full bg-tertiary text-foreground text-[15px] font-sans focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         )}
         <button
           type="submit"
