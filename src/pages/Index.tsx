@@ -12,7 +12,7 @@ import AuthPage from "@/pages/AuthPage";
 type Screen = "onboarding" | "chat" | "dashboard" | "progress" | "profile";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isRecovery } = useAuth();
   const [screen, setScreen] = useState<Screen>("onboarding");
 
   if (loading) {
@@ -23,7 +23,7 @@ const Index = () => {
     );
   }
 
-  if (!user) return <AuthPage />;
+  if (!user || isRecovery) return <AuthPage defaultView={isRecovery ? "reset" : undefined} />;
 
   const showNav = screen !== "onboarding";
 
