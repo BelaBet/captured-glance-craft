@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PasswordStrength from "@/components/PasswordStrength";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Compass, ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -115,6 +116,9 @@ const AuthPage = ({ defaultView }: { defaultView?: View }) => {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+        )}
+        {(view === "signup" || view === "reset") && (
+          <PasswordStrength password={password} />
         )}
         <button
           type="submit"
