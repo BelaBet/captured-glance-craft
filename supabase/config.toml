@@ -1,1 +1,4 @@
 project_id = "pobzsvptmfrsezbwoiwk"
+
+[functions.compass-chat]
+verify_jwt = false
