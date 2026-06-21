@@ -133,7 +133,7 @@ const ChatScreen = () => {
       </div>
 
       {/* Messages */}
-      <div className="pt-[100px] px-6 flex flex-col gap-5 mb-[120px]">
+      <div className="pt-[100px] px-[30px] flex flex-col gap-5 mb-[120px]">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -173,7 +173,7 @@ const ChatScreen = () => {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 max-w-[430px] w-full px-6 py-4 bg-card border-t border-border">
+      <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 max-w-[430px] w-full px-[30px] py-4 bg-card border-t border-border">
         <div className="flex gap-3 items-center">
           <input
             type="text"
