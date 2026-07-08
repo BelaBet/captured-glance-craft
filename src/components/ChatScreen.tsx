@@ -149,7 +149,7 @@ const ChatScreen = () => {
             </div>
             <div className="max-w-[85%] sm:max-w-[75%]">
               <div
-                className={`px-5 py-4 rounded-[20px] text-[15px] leading-relaxed whitespace-pre-wrap ${
+                className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[20px] text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-tertiary text-foreground"
