@@ -133,20 +133,21 @@ const ChatScreen = () => {
       </div>
 
       {/* Messages */}
-      <div className="pt-[100px] px-[30px] flex flex-col gap-5 mb-[120px]">
+      <div className="pt-[100px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`flex gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+            className={`flex gap-2 sm:gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}
           >
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 ${
                 msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
               }`}
             >
-              {msg.role === "user" ? <User size={20} /> : <Compass size={20} />}
+              {msg.role === "user" ? <User size={18} className="sm:hidden" /> : <Compass size={18} className="sm:hidden" />}
+              {msg.role === "user" ? <User size={20} className="hidden sm:block" /> : <Compass size={20} className="hidden sm:block" />}
             </div>
-            <div className="max-w-[75%]">
+            <div className="max-w-[85%] sm:max-w-[75%]">
               <div
                 className={`px-5 py-4 rounded-[20px] text-[15px] leading-relaxed whitespace-pre-wrap ${
                   msg.role === "user"
