@@ -62,7 +62,7 @@ const AuthPage = ({ defaultView }: { defaultView?: View }) => {
   };
 
   return (
-    <div className="max-w-[430px] mx-auto bg-card min-h-screen flex flex-col justify-center px-8 shadow-[0_0_60px_rgba(0,0,0,0.06)]">
+    <div className="max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] mx-auto bg-card min-h-screen flex flex-col justify-center px-5 sm:px-8 shadow-[0_0_60px_rgba(0,0,0,0.06)]">
       {(view === "forgot" || view === "reset") && (
         <button onClick={() => setView("login")} className="flex items-center gap-1 text-muted-foreground mb-6 hover:text-foreground transition-colors">
           <ArrowLeft size={18} /> Voltar
