@@ -17,7 +17,7 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="max-w-[430px] mx-auto bg-card min-h-screen flex items-center justify-center">
+      <div className="max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] mx-auto bg-card min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -28,7 +28,7 @@ const Index = () => {
   const showNav = screen !== "onboarding";
 
   return (
-    <div className="max-w-[430px] mx-auto bg-card min-h-screen relative shadow-[0_0_60px_rgba(0,0,0,0.06)]">
+    <div className="max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] mx-auto bg-card min-h-screen relative shadow-[0_0_60px_rgba(0,0,0,0.06)]">
       <ThemeToggle />
       {screen === "onboarding" && <OnboardingScreen onStart={() => setScreen("chat")} />}
       {screen === "chat" && <ChatScreen />}
