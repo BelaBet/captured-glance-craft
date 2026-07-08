@@ -174,8 +174,8 @@ const ChatScreen = () => {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 max-w-[430px] w-full px-[30px] py-4 bg-card border-t border-border">
-        <div className="flex gap-3 items-center">
+      <div className="fixed bottom-[80px] left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full px-4 sm:px-6 lg:px-[30px] py-3 sm:py-4 bg-card border-t border-border">
+        <div className="flex gap-2 sm:gap-3 items-center">
           <input
             type="text"
             value={input}
