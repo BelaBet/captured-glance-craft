@@ -39,31 +39,36 @@ const ThemeToggle = () => {
   }, []);
 
   return (
-    <div className="fixed top-5 right-5 z-[1000] flex gap-2" ref={pickerRef}>
+    <div
+      className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full px-4 sm:px-5 z-[1000] flex justify-end gap-2 pointer-events-none"
+      ref={pickerRef}
+    >
       <button
         onClick={() => setDark(!dark)}
-        className="flex items-center gap-2 bg-tertiary border border-border rounded-full px-4 py-2 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+        className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 bg-tertiary border border-border rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
       >
-        <Sun size={16} className="text-muted-foreground" />
-        <div className="w-12 h-[26px] bg-border rounded-full relative transition-colors duration-300">
+        <Sun size={14} className="text-muted-foreground sm:hidden" />
+        <Sun size={16} className="text-muted-foreground hidden sm:block" />
+        <div className="w-9 sm:w-12 h-[22px] sm:h-[26px] bg-border rounded-full relative transition-colors duration-300">
           <div
-            className={`absolute w-5 h-5 bg-primary rounded-full top-[3px] transition-transform duration-300 ${
-              dark ? "translate-x-[25px]" : "translate-x-[3px]"
+            className={`absolute w-4 h-4 sm:w-5 sm:h-5 bg-primary rounded-full top-[3px] transition-transform duration-300 ${
+              dark ? "translate-x-[19px] sm:translate-x-[25px]" : "translate-x-[3px]"
             }`}
           />
         </div>
-        <Moon size={16} className="text-muted-foreground" />
+        <Moon size={14} className="text-muted-foreground sm:hidden" />
+        <Moon size={16} className="text-muted-foreground hidden sm:block" />
       </button>
 
       <button
         onClick={() => setPickerOpen(!pickerOpen)}
-        className="flex items-center bg-tertiary border border-border rounded-full px-3 py-2 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+        className="pointer-events-auto flex items-center bg-tertiary border border-border rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
       >
         <Palette size={16} className="text-muted-foreground" />
       </button>
 
       {pickerOpen && (
-        <div className="absolute top-14 right-0 bg-card border border-border rounded-[20px] p-4 shadow-xl animate-fade-in z-[1001]">
+        <div className="pointer-events-auto absolute top-12 sm:top-14 right-4 sm:right-5 bg-card border border-border rounded-[20px] p-4 shadow-xl animate-fade-in z-[1001]">
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Escolha sua paleta
           </div>
