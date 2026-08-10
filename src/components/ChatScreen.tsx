@@ -120,7 +120,7 @@ const ChatScreen = () => {
   };
 
   return (
-    <div className="animate-fade-in pb-[100px]">
+    <div className="animate-fade-in pb-[180px]">
       {/* Header */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-3 pt-[56px] sm:pt-[64px] border-b border-border z-40">
         <div className="flex items-center gap-3 p-3 bg-tertiary rounded-xl">
