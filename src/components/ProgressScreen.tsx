@@ -49,12 +49,13 @@ const ProgressScreen = () => {
 
   return (
     <div className="animate-fade-in pb-[100px]">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card p-5 border-b border-border z-50">
-        <h2 className="font-serif text-[28px] font-normal mb-1">Metas & Ações</h2>
-        <p className="text-sm text-muted-foreground">Seu plano semanal personalizado</p>
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-4 pt-[56px] sm:pt-[64px] border-b border-border z-40">
+        <h2 className="font-serif text-2xl sm:text-[28px] font-normal mb-1">Metas &amp; Ações</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground">Seu plano semanal personalizado</p>
       </div>
 
-      <div className="pt-[100px] px-6">
+      <div className="pt-[150px] sm:pt-[168px] px-4 sm:px-6">
+
         {/* Weekly Goals */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">
@@ -63,17 +64,18 @@ const ProgressScreen = () => {
           </h3>
 
           {goals.map((goal, gi) => (
-            <div key={gi} className="bg-tertiary p-5 rounded-2xl mb-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="font-semibold text-[15px] flex-1 font-sans">{goal.title}</div>
+            <div key={gi} className="bg-tertiary p-4 sm:p-5 rounded-2xl mb-4">
+              <div className="flex justify-between items-start gap-2 mb-3 flex-wrap">
+                <div className="font-semibold text-sm sm:text-[15px] flex-1 min-w-[60%] font-sans">{goal.title}</div>
                 <span
-                  className={`px-3 py-1 rounded-xl text-xs font-medium text-card ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-medium text-card whitespace-nowrap ${
                     goal.status === "completed" ? "bg-success" : "bg-warning"
                   }`}
                 >
                   {goal.status === "completed" ? "Completa" : "Em andamento"}
                 </span>
               </div>
+
 
               <div className="h-2 bg-progress-bg rounded overflow-hidden mb-2">
                 <div
