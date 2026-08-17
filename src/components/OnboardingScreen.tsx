@@ -23,13 +23,14 @@ const OnboardingScreen = ({ onStart }: OnboardingScreenProps) => {
   }, []);
 
   return (
-  <div className="px-8 pt-16 pb-10 text-center min-h-screen flex flex-col justify-between">
+  <div className="px-6 sm:px-8 pt-[72px] sm:pt-16 pb-8 sm:pb-10 text-center min-h-screen flex flex-col justify-between">
     <div className="flex-1 flex flex-col justify-center animate-slide-up">
       <CompassLogo />
-      <h1 className="font-serif text-[42px] font-light mb-4 tracking-tight">Compass</h1>
-      <p className="text-lg text-muted-foreground font-light mb-12 leading-relaxed">
+      <h1 className="font-serif text-[34px] sm:text-[42px] font-light mb-3 sm:mb-4 tracking-tight">Compass</h1>
+      <p className="text-base sm:text-lg text-muted-foreground font-light mb-8 sm:mb-12 leading-relaxed">
         Encontre a direção que dá sentido à sua vida
       </p>
+
 
       <div className="flex flex-col gap-5 mb-10 text-left">
         {steps.map(({ num, title, desc }) => (
