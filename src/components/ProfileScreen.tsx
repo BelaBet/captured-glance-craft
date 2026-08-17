@@ -185,7 +185,7 @@ const ProfileScreen = () => {
 
 const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
   <div className="mb-8">
-    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">{icon}{title}</h3>
+    <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 font-sans">{icon}{title}</h3>
     {children}
   </div>
 );

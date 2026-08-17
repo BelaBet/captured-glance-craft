@@ -148,9 +148,9 @@ const ChatScreen = () => {
               {msg.role === "user" ? <User size={18} className="sm:hidden" /> : <Compass size={18} className="sm:hidden" />}
               {msg.role === "user" ? <User size={20} className="hidden sm:block" /> : <Compass size={20} className="hidden sm:block" />}
             </div>
-            <div className="max-w-[85%] sm:max-w-[75%]">
+            <div className="max-w-[85%] sm:max-w-[75%] min-w-0">
               <div
-                className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[20px] text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap ${
+                className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[20px] text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-tertiary text-foreground"
@@ -158,6 +158,7 @@ const ChatScreen = () => {
               >
                 {msg.content}
               </div>
+
             </div>
           </div>
         ))}
