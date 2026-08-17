@@ -58,10 +58,11 @@ const ProgressScreen = () => {
 
         {/* Weekly Goals */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">
-            <Target size={20} className="text-primary" />
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 font-sans">
+            <Target className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-primary shrink-0" />
             Metas da Semana
           </h3>
+
 
           {goals.map((goal, gi) => (
             <div key={gi} className="bg-tertiary p-4 sm:p-5 rounded-2xl mb-4">
@@ -83,15 +84,15 @@ const ProgressScreen = () => {
                   style={{ width: `${goal.progress}%` }}
                 />
               </div>
-              <div className="text-[13px] text-muted-foreground">{goal.progressText}</div>
+              <div className="text-xs sm:text-[13px] text-muted-foreground">{goal.progressText}</div>
 
               {goal.actions.length > 0 && (
-                <div className="flex flex-col gap-3 mt-3">
+                <div className="flex flex-col gap-2.5 sm:gap-3 mt-3">
                   {goal.actions.map((action, ai) => (
-                    <div key={ai} className="flex items-center gap-3 p-3 bg-card rounded-xl">
+                    <div key={ai} className="flex items-start gap-3 p-3 bg-card rounded-xl">
                       <button
                         onClick={() => toggleAction(gi, ai)}
-                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-300 shrink-0 ${
+                        className={`w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center transition-all duration-300 shrink-0 ${
                           action.done
                             ? "bg-primary border-primary"
                             : "border-border"
@@ -99,7 +100,8 @@ const ProgressScreen = () => {
                       >
                         {action.done && <Check size={12} className="text-primary-foreground" />}
                       </button>
-                      <span className="text-sm flex-1">{action.text}</span>
+                      <span className="text-[13px] sm:text-sm flex-1 min-w-0 break-words leading-snug">{action.text}</span>
+
                     </div>
                   ))}
                 </div>
@@ -110,15 +112,16 @@ const ProgressScreen = () => {
 
         {/* Today's Action */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">
-            <Zap size={20} className="text-primary" />
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 font-sans">
+            <Zap className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-primary shrink-0" />
             Ação de Hoje
           </h3>
-          <div className="bg-tertiary p-5 rounded-2xl border-l-4 border-primary">
-            <div className="font-semibold mb-2 text-[15px] font-sans">
+          <div className="bg-tertiary p-4 sm:p-5 rounded-2xl border-l-4 border-primary">
+            <div className="font-semibold mb-2 text-sm sm:text-[15px] font-sans break-words">
               Escreva o outline da sua primeira aula
             </div>
-            <div className="text-sm text-muted-foreground leading-relaxed">
+            <div className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed break-words">
+
               Baseado nas suas conversas, você se interessa por ensinar desenvolvimento pessoal.
               Dedique 20 minutos hoje para estruturar uma aula de introdução. Não precisa ser
               perfeito - o importante é começar.

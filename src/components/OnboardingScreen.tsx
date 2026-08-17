@@ -32,22 +32,23 @@ const OnboardingScreen = ({ onStart }: OnboardingScreenProps) => {
       </p>
 
 
-      <div className="flex flex-col gap-5 mb-10 text-left">
+      <div className="flex flex-col gap-4 sm:gap-5 mb-8 sm:mb-10 text-left">
         {steps.map(({ num, title, desc }) => (
           <div
             key={num}
-            className="flex items-start gap-4 p-5 bg-tertiary rounded-2xl transition-transform duration-300 hover:translate-x-1"
+            className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-tertiary rounded-2xl transition-transform duration-300 hover:translate-x-1"
           >
             <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold shrink-0 text-sm">
               {num}
             </div>
-            <div>
-              <h3 className="text-base font-semibold mb-1 font-sans">{title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+            <div className="min-w-0">
+              <h3 className="text-[15px] sm:text-base font-semibold mb-1 font-sans break-words">{title}</h3>
+              <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed break-words">{desc}</p>
             </div>
           </div>
         ))}
       </div>
+
     </div>
 
     <button
