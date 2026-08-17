@@ -70,21 +70,22 @@ const DashboardScreen = () => (
 
       {/* Insights */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 font-sans">
-          <Gem size={20} className="text-primary" />
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 font-sans">
+          <Gem className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-primary shrink-0" />
           Insights Descobertos
         </h3>
         {insights.map(({ title, text, date }) => (
           <div
             key={title}
-            className="bg-tertiary p-5 rounded-2xl mb-3 border-l-4 border-primary transition-transform duration-300 hover:translate-x-1"
+            className="bg-tertiary p-4 sm:p-5 rounded-2xl mb-3 border-l-4 border-primary transition-transform duration-300 hover:translate-x-1"
           >
-            <div className="font-semibold mb-2 text-[15px] font-sans">{title}</div>
-            <div className="text-sm text-muted-foreground leading-relaxed">{text}</div>
-            <div className="text-xs text-text-tertiary mt-2">{date}</div>
+            <div className="font-semibold mb-2 text-sm sm:text-[15px] font-sans break-words">{title}</div>
+            <div className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed break-words">{text}</div>
+            <div className="text-[11px] sm:text-xs text-text-tertiary mt-2">{date}</div>
           </div>
         ))}
       </div>
+
     </div>
   </div>
 );
