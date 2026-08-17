@@ -140,23 +140,24 @@ const ProfileScreen = () => {
           </div>
         ) : (
           <div className="flex items-center justify-center gap-2 mb-2">
-            <h2 className="font-serif text-[26px]">{displayName}</h2>
+            <h2 className="font-serif text-[22px] sm:text-[26px] break-words max-w-[240px] sm:max-w-none">{displayName}</h2>
             <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-primary transition-colors">
               <Pencil size={16} />
             </button>
           </div>
         )}
 
-        <p className="text-sm text-muted-foreground">{user?.email}</p>
+        <p className="text-sm text-muted-foreground break-all px-2">{user?.email}</p>
         <p className="text-xs text-muted-foreground mt-1">No Compass desde {joinDate}</p>
       </div>
 
-      <div className="bg-gradient-to-br from-accent to-primary text-primary-foreground p-7 rounded-[20px] mb-8">
-        <h3 className="font-serif text-[22px] mb-2">Compass Pro</h3>
-        <p className="opacity-90 mb-5">Conversas ilimitadas • Insights avançados • Suporte prioritário</p>
-        <button className="w-full bg-card text-primary py-[18px] rounded-full font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="bg-gradient-to-br from-accent to-primary text-primary-foreground p-5 sm:p-7 rounded-[20px] mb-8">
+        <h3 className="font-serif text-xl sm:text-[22px] mb-2">Compass Pro</h3>
+        <p className="opacity-90 mb-5 text-sm sm:text-base">Conversas ilimitadas • Insights avançados • Suporte prioritário</p>
+        <button className="w-full bg-card text-primary py-4 sm:py-[18px] rounded-full font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           Gerenciar assinatura
         </button>
+
       </div>
 
       <Section icon={<Settings size={20} className="text-primary" />} title="Configurações">
@@ -190,11 +191,12 @@ const Section = ({ icon, title, children }: { icon: React.ReactNode; title: stri
 );
 
 const SettingItem = ({ title, desc }: { title: string; desc: string }) => (
-  <div className="flex justify-between items-center p-5 bg-tertiary rounded-2xl mb-3 cursor-pointer transition-transform duration-300 hover:translate-x-1">
-    <div className="flex-1">
-      <div className="font-semibold mb-1 text-[15px] font-sans">{title}</div>
-      <div className="text-[13px] text-muted-foreground">{desc}</div>
+  <div className="flex justify-between items-center gap-3 p-4 sm:p-5 bg-tertiary rounded-2xl mb-3 cursor-pointer transition-transform duration-300 hover:translate-x-1">
+    <div className="flex-1 min-w-0">
+      <div className="font-semibold mb-1 text-sm sm:text-[15px] font-sans">{title}</div>
+      <div className="text-xs sm:text-[13px] text-muted-foreground">{desc}</div>
     </div>
+
     <ChevronRight size={20} className="text-text-tertiary" />
   </div>
 );
