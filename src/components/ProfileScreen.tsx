@@ -99,11 +99,12 @@ const ProfileScreen = () => {
   };
 
   return (
-    <div className="animate-fade-in pb-[100px] px-6 pt-10">
-      <div className="text-center py-10 border-b border-border mb-8">
+    <div className="animate-fade-in pb-[110px] px-4 sm:px-6 pt-[68px] sm:pt-[76px]">
+      <div className="text-center py-8 sm:py-10 border-b border-border mb-8">
         {/* Avatar */}
-        <div className="relative w-[100px] h-[100px] mx-auto mb-5">
+        <div className="relative w-20 h-20 sm:w-[100px] sm:h-[100px] mx-auto mb-5">
           <Avatar className="w-full h-full text-2xl">
+
             {avatarUrl ? (
               <AvatarImage src={avatarUrl} alt={displayName} />
             ) : null}

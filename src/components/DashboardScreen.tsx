@@ -50,20 +50,21 @@ const DashboardScreen = () => (
 
 
       {/* Purpose Map */}
-      <div className="bg-tertiary p-7 rounded-3xl mb-8">
-        <h3 className="font-serif text-[22px] font-normal mb-5">Mapa de Propósito</h3>
-        <div className="relative h-[200px] bg-card rounded-2xl p-5 overflow-hidden">
+      <div className="bg-tertiary p-5 sm:p-7 rounded-3xl mb-8">
+        <h3 className="font-serif text-xl sm:text-[22px] font-normal mb-4 sm:mb-5">Mapa de Propósito</h3>
+        <div className="relative h-[180px] sm:h-[200px] bg-card rounded-2xl p-4 sm:p-5 overflow-hidden">
           {mapNodes.map(({ icon: Icon, style, delay, accent, success }, i) => (
             <div
               key={i}
-              className={`absolute w-[60px] h-[60px] rounded-full flex items-center justify-center text-primary-foreground animate-pulse-node ${style} ${
+              className={`absolute w-12 h-12 sm:w-[60px] sm:h-[60px] rounded-full flex items-center justify-center text-primary-foreground animate-pulse-node ${style} ${
                 accent ? "bg-primary" : success ? "bg-success" : "bg-accent"
               }`}
               style={{ animationDelay: delay }}
             >
-              <Icon size={28} />
+              <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
           ))}
+
         </div>
       </div>
 
