@@ -30,8 +30,13 @@ const AuthPage = ({ defaultView }: { defaultView?: View }) => {
       if (error) {
         toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
       } else {
-        toast({ title: "Conta criada!", description: "Verifique seu email para confirmar a conta." });
+        toast({ title: "Conta criada!", description: "Verifique seu email para confirmar e depois entre com sua conta." });
+        setPassword("");
+        setFullName("");
+        setShowPassword(false);
+        setView("login");
       }
+
     } else if (view === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}?reset=true`,
