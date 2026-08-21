@@ -99,7 +99,7 @@ const ProfileScreen = () => {
   };
 
   return (
-    <div className="animate-fade-in pb-[110px] px-4 sm:px-6 pt-[68px] sm:pt-[76px]">
+    <div className="animate-fade-in pb-[110px] px-4 sm:px-6 pt-6 sm:pt-8">
       <div className="text-center py-8 sm:py-10 border-b border-border mb-8">
         {/* Avatar */}
         <div className="relative w-20 h-20 sm:w-[100px] sm:h-[100px] mx-auto mb-5">

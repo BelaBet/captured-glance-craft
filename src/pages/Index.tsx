@@ -6,7 +6,6 @@ import DashboardScreen from "@/components/DashboardScreen";
 import ProgressScreen from "@/components/ProgressScreen";
 import ProfileScreen from "@/components/ProfileScreen";
 import BottomNav from "@/components/BottomNav";
-import ThemeToggle from "@/components/ThemeToggle";
 import AuthPage from "@/pages/AuthPage";
 
 type Screen = "onboarding" | "chat" | "dashboard" | "progress" | "profile";
@@ -29,7 +28,6 @@ const Index = () => {
 
   return (
     <div className="max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] mx-auto bg-card min-h-screen relative shadow-[0_0_60px_rgba(0,0,0,0.06)]">
-      <ThemeToggle />
       {screen === "onboarding" && <OnboardingScreen onStart={() => setScreen("chat")} />}
       {screen === "chat" && <ChatScreen />}
       {screen === "dashboard" && <DashboardScreen />}
