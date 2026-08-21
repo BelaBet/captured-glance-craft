@@ -122,7 +122,7 @@ const ChatScreen = () => {
   return (
     <div className="animate-fade-in pb-[180px]">
       {/* Header */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-3 pt-[56px] sm:pt-[64px] border-b border-border z-40">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-3 pt-5 sm:pt-6 border-b border-border z-40">
         <div className="flex items-center gap-3 p-3 bg-tertiary rounded-xl">
           <Flame size={28} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
@@ -133,7 +133,7 @@ const ChatScreen = () => {
       </div>
 
       {/* Messages */}
-      <div className="pt-[150px] sm:pt-[168px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
+      <div className="pt-[114px] sm:pt-[132px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
 
         {messages.map((msg, i) => (
           <div

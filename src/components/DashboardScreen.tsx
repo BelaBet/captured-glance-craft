@@ -29,12 +29,12 @@ const insights = [
 
 const DashboardScreen = () => (
   <div className="animate-fade-in pb-[100px]">
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-4 pt-[56px] sm:pt-[64px] border-b border-border z-40">
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-4 pt-5 sm:pt-6 border-b border-border z-40">
       <h2 className="font-serif text-2xl sm:text-[28px] font-normal mb-1">Sua Jornada</h2>
       <p className="text-xs sm:text-sm text-muted-foreground">Visualize seu progresso e insights</p>
     </div>
 
-    <div className="pt-[150px] sm:pt-[168px] px-4 sm:px-6">
+    <div className="pt-[114px] sm:pt-[132px] px-4 sm:px-6">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
         {stats.map(({ value, label }) => (
