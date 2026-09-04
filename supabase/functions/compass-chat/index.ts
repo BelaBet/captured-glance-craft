@@ -1,15 +1,61 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const allowedOrigin = Deno.env.get("APP_ORIGIN") || Deno.env.get("SITE_URL") || "*";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": allowedOrigin,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  Vary: "Origin",
 };
+
+const MAX_MESSAGES = 40;
+const MAX_MESSAGE_LENGTH = 4000;
+
+const jsonResponse = (body: unknown, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return jsonResponse({ error: "Método não permitido" }, 405);
 
   try {
-    const { messages } = await req.json();
+    const authorization = req.headers.get("Authorization");
+    const token = authorization?.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return jsonResponse({ error: "Não autenticado" }, 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase auth is not configured");
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) return jsonResponse({ error: "Sessão inválida ou expirada" }, 401);
+
+    const body = await req.json();
+    const messages = body?.messages;
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
+      return jsonResponse({ error: `Envie entre 1 e ${MAX_MESSAGES} mensagens.` }, 400);
+    }
+
+    const validMessages = messages.every((message: unknown) => {
+      if (!message || typeof message !== "object") return false;
+      const item = message as { role?: unknown; content?: unknown };
+      return (item.role === "user" || item.role === "assistant") &&
+        typeof item.content === "string" &&
+        item.content.trim().length > 0 &&
+        item.content.length <= MAX_MESSAGE_LENGTH;
+    });
+    if (!validMessages) {
+      return jsonResponse({ error: "Formato de mensagem inválido." }, 400);
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -44,34 +90,18 @@ Diretrizes:
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA insuficientes." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (response.status === 429) return jsonResponse({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }, 429);
+      if (response.status === 402) return jsonResponse({ error: "Créditos de IA insuficientes." }, 402);
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Erro no serviço de IA" }, 502);
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: e instanceof Error ? e.message : "Erro interno" }, 500);
   }
 });
