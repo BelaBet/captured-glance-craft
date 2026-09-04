@@ -1,10 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const allowedOrigin = Deno.env.get("APP_ORIGIN") || Deno.env.get("SITE_URL");
-if (!allowedOrigin) console.warn("APP_ORIGIN/SITE_URL is not configured; CORS will allow no browser origin.");
+const allowedOrigin = Deno.env.get("APP_ORIGIN") || Deno.env.get("SITE_URL") || "https://captured-glance-craft.lovable.app";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": allowedOrigin || "null",
+  "Access-Control-Allow-Origin": allowedOrigin,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
@@ -47,13 +46,11 @@ serve(async (req) => {
       console.error("rate limit check failed:", rateLimitError);
       return jsonResponse({ error: "Não foi possível validar o limite de uso." }, 503);
     }
-    if (!allowed) {
-      return jsonResponse(
-        { error: "Limite de mensagens atingido. Aguarde um minuto e tente novamente." },
-        429,
-        { "Retry-After": "60" },
-      );
-    }
+    if (!allowed) return jsonResponse(
+      { error: "Limite de mensagens atingido. Aguarde um minuto e tente novamente." },
+      429,
+      { "Retry-After": "60" },
+    );
 
     const body = await req.json();
     const conversationId = body?.conversation_id;
@@ -67,15 +64,12 @@ serve(async (req) => {
       .eq("id", conversationId)
       .eq("user_id", user.id)
       .maybeSingle();
-
     if (conversationError) {
       console.error("conversation lookup failed:", conversationError);
       return jsonResponse({ error: "Não foi possível validar a conversa." }, 503);
     }
     if (!conversation) return jsonResponse({ error: "Conversa não encontrada." }, 404);
 
-    // The client no longer controls the assistant context. Read only messages
-    // persisted under the authenticated user's own conversation.
     const { data: persistedMessages, error: messagesError } = await supabase
       .from("messages")
       .select("role, content")
@@ -83,7 +77,6 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(MAX_MESSAGES);
-
     if (messagesError) {
       console.error("message history lookup failed:", messagesError);
       return jsonResponse({ error: "Não foi possível carregar o contexto da conversa." }, 503);
@@ -105,10 +98,7 @@ serve(async (req) => {
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
@@ -136,20 +126,13 @@ Diretrizes:
     if (!response.ok) {
       if (response.status === 429) return jsonResponse({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }, 429);
       if (response.status === 402) return jsonResponse({ error: "Créditos de IA insuficientes." }, 402);
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", response.status, await response.text());
       return jsonResponse({ error: "Erro no serviço de IA" }, 502);
     }
-
     if (!response.body) return jsonResponse({ error: "Serviço de IA sem resposta." }, 502);
 
     return new Response(response.body, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache, no-store",
-        "X-Content-Type-Options": "nosniff",
-      },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-store", "X-Content-Type-Options": "nosniff" },
     });
   } catch (e) {
     console.error("chat error:", e);
