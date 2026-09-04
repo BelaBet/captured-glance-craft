@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const allowedOrigin = Deno.env.get("APP_ORIGIN") || Deno.env.get("SITE_URL") || "*";
+const allowedOrigin = Deno.env.get("APP_ORIGIN") || Deno.env.get("SITE_URL");
+if (!allowedOrigin) console.warn("APP_ORIGIN/SITE_URL is not configured; CORS will allow no browser origin.");
 const corsHeaders = {
-  "Access-Control-Allow-Origin": allowedOrigin,
+  "Access-Control-Allow-Origin": allowedOrigin || "null",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
@@ -12,10 +13,10 @@ const corsHeaders = {
 const MAX_MESSAGES = 40;
 const MAX_MESSAGE_LENGTH = 4000;
 
-const jsonResponse = (body: unknown, status: number) =>
+const jsonResponse = (body: unknown, status: number, extraHeaders: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders },
   });
 
 serve(async (req) => {
@@ -25,7 +26,7 @@ serve(async (req) => {
   try {
     const authorization = req.headers.get("Authorization");
     const token = authorization?.replace(/^Bearer\s+/i, "").trim();
-    if (!token) return jsonResponse({ error: "Não autenticado" }, 401);
+    if (!token || token.length > 4096) return jsonResponse({ error: "Não autenticado" }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -37,6 +38,22 @@ serve(async (req) => {
     });
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) return jsonResponse({ error: "Sessão inválida ou expirada" }, 401);
+
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("check_compass_chat_rate_limit", {
+      p_window_seconds: 60,
+      p_max_requests: 20,
+    });
+    if (rateLimitError) {
+      console.error("rate limit check failed:", rateLimitError);
+      return jsonResponse({ error: "Não foi possível validar o limite de uso." }, 503);
+    }
+    if (!allowed) {
+      return jsonResponse(
+        { error: "Limite de mensagens atingido. Aguarde um minuto e tente novamente." },
+        429,
+        { "Retry-After": "60" },
+      );
+    }
 
     const body = await req.json();
     const messages = body?.messages;
@@ -52,9 +69,7 @@ serve(async (req) => {
         item.content.trim().length > 0 &&
         item.content.length <= MAX_MESSAGE_LENGTH;
     });
-    if (!validMessages) {
-      return jsonResponse({ error: "Formato de mensagem inválido." }, 400);
-    }
+    if (!validMessages) return jsonResponse({ error: "Formato de mensagem inválido." }, 400);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -97,11 +112,13 @@ Diretrizes:
       return jsonResponse({ error: "Erro no serviço de IA" }, 502);
     }
 
+    if (!response.body) return jsonResponse({ error: "Serviço de IA sem resposta." }, 502);
+
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-store", "X-Content-Type-Options": "nosniff" },
     });
   } catch (e) {
     console.error("chat error:", e);
-    return jsonResponse({ error: e instanceof Error ? e.message : "Erro interno" }, 500);
+    return jsonResponse({ error: "Erro interno ao processar a mensagem." }, 500);
   }
 });
