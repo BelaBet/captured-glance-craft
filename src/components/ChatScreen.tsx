@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
+  id?: string;
   role: "user" | "assistant";
   content: string;
 }
@@ -12,8 +13,12 @@ interface Message {
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CONTEXT_MESSAGES = 40;
 
+const GREETING =
+  "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.";
+
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -23,30 +28,68 @@ const ChatScreen = () => {
 
   useEffect(() => {
     if (!user) return;
-    loadProfile();
-    if (messages.length === 0) {
-      setMessages([
-        {
-          role: "assistant",
-          content: "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.",
-        },
+
+    let cancelled = false;
+
+    const loadChat = async () => {
+      const [profileResult, conversationResult] = await Promise.all([
+        supabase.from("profiles").select("streak_days").eq("user_id", user.id).single(),
+        supabase
+          .from("conversations")
+          .select("id")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
-    }
-  }, [user]);
+
+      if (cancelled) return;
+      if (profileResult.data) setStreak(profileResult.data.streak_days ?? 0);
+
+      const existingConversation = conversationResult.data;
+      if (!existingConversation) {
+        setMessages([{ role: "assistant", content: GREETING }]);
+        return;
+      }
+
+      setConversationId(existingConversation.id);
+      const { data: storedMessages, error } = await supabase
+        .from("messages")
+        .select("id, role, content")
+        .eq("conversation_id", existingConversation.id)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(MAX_CONTEXT_MESSAGES);
+
+      if (cancelled) return;
+      if (error) {
+        toast({
+          title: "Não foi possível carregar sua conversa",
+          description: "Tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+        setMessages([{ role: "assistant", content: GREETING }]);
+        return;
+      }
+
+      setMessages(
+        storedMessages?.map((message) => ({
+          id: message.id,
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: message.content,
+        })) ?? []
+      );
+    };
+
+    void loadChat();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, toast]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const loadProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("streak_days")
-      .eq("user_id", user.id)
-      .single();
-    if (data) setStreak(data.streak_days);
-  };
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
@@ -62,14 +105,48 @@ const ChatScreen = () => {
     }
 
     setInput("");
-    const userMsg: Message = { role: "user", content: trimmed };
-    const allMessages = [...messages, userMsg].slice(-MAX_CONTEXT_MESSAGES);
-    setMessages(allMessages);
     setIsLoading(true);
 
-    let assistantContent = "";
-
     try {
+      let activeConversationId = conversationId;
+
+      if (!activeConversationId) {
+        const { data: conversation, error } = await supabase
+          .from("conversations")
+          .insert({ user_id: user.id })
+          .select("id")
+          .single();
+        if (error || !conversation) throw new Error("Não foi possível iniciar sua conversa.");
+        activeConversationId = conversation.id;
+        setConversationId(activeConversationId);
+      }
+
+      const { data: savedUserMessage, error: userMessageError } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: activeConversationId,
+          user_id: user.id,
+          role: "user",
+          content: trimmed,
+        })
+        .select("id, role, content")
+        .single();
+
+      if (userMessageError || !savedUserMessage) {
+        throw new Error("Não foi possível salvar sua mensagem.");
+      }
+
+      const currentMessages: Message[] = [
+        ...messages.filter((message) => message.id),
+        {
+          id: savedUserMessage.id,
+          role: "user",
+          content: savedUserMessage.content,
+        },
+      ].slice(-MAX_CONTEXT_MESSAGES);
+
+      setMessages(currentMessages);
+
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sua sessão expirou. Entre novamente.");
@@ -82,7 +159,10 @@ const ChatScreen = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ messages: allMessages }),
+          body: JSON.stringify({
+            conversation_id: activeConversationId,
+            messages: currentMessages.map(({ role, content }) => ({ role, content })),
+          }),
         }
       );
 
@@ -102,6 +182,7 @@ const ChatScreen = () => {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let assistantContent = "";
       let streamDone = false;
 
       while (!streamDone) {
@@ -115,11 +196,13 @@ const ChatScreen = () => {
           buffer = buffer.slice(newlineIdx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
+
           const jsonStr = line.slice(6).trim();
           if (jsonStr === "[DONE]") {
             streamDone = true;
             break;
           }
+
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
@@ -128,8 +211,8 @@ const ChatScreen = () => {
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
                 if (last?.role === "assistant") {
-                  return prev.map((m, i) =>
-                    i === prev.length - 1 ? { ...m, content: assistantContent } : m
+                  return prev.map((message, index) =>
+                    index === prev.length - 1 ? { ...message, content: assistantContent } : message
                   );
                 }
                 return [...prev, { role: "assistant", content: assistantContent }];
@@ -143,13 +226,26 @@ const ChatScreen = () => {
       }
 
       if (!assistantContent) throw new Error("O Compass não retornou uma resposta.");
+
+      const { error: assistantMessageError } = await supabase.from("messages").insert({
+        conversation_id: activeConversationId,
+        user_id: user.id,
+        role: "assistant",
+        content: assistantContent,
+      });
+
+      if (assistantMessageError) {
+        throw new Error("A resposta chegou, mas não foi possível salvar seu histórico.");
+      }
+
+      const { data: newStreak } = await supabase.rpc("record_compass_activity");
+      if (typeof newStreak === "number") setStreak(newStreak);
     } catch (e: unknown) {
       toast({
         title: "Erro",
         description: e instanceof Error ? e.message : "Não foi possível falar com o Compass.",
         variant: "destructive",
       });
-      setMessages((prev) => prev.filter((message, index) => !(index === prev.length - 1 && message.role === "assistant" && !message.content)));
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +265,7 @@ const ChatScreen = () => {
 
       <div className="pt-[114px] sm:pt-[132px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
         {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2 sm:gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+          <div key={msg.id ?? `${msg.role}-${i}`} className={`flex gap-2 sm:gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
             <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>
               {msg.role === "user" ? <User size={18} className="sm:hidden" /> : <Compass size={18} className="sm:hidden" />}
               {msg.role === "user" ? <User size={20} className="hidden sm:block" /> : <Compass size={20} className="hidden sm:block" />}
