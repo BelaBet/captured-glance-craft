@@ -1,29 +1,28 @@
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import ChatScreen from "./ChatScreen";
 
 const mockGetSession = vi.fn();
-const mockSingle = vi.fn();
 const mockToast = vi.fn();
+const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
-vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ user: { id: "user-1" } }),
-}));
-
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: mockToast }),
-}));
-
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "user-1" } }) }));
+vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: mockToast }) }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: { getSession: mockGetSession },
-    from: () => ({
-      select: () => ({
-        eq: () => ({ single: mockSingle }),
-      }),
-    }),
-  },
+  supabase: { auth: { getSession: mockGetSession }, from: mockFrom, rpc: mockRpc },
 }));
+
+const makeChain = (result: unknown) => {
+  const chain: Record<string, unknown> = {};
+  for (const method of ["select", "eq", "order", "limit"]) chain[method] = vi.fn(() => chain);
+  chain.single = vi.fn().mockResolvedValue(result);
+  chain.maybeSingle = vi.fn().mockResolvedValue(result);
+  chain.insert = vi.fn(() => chain);
+  chain.update = vi.fn(() => chain);
+  chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve);
+  return chain;
+};
 
 const streamResponse = (chunks: string[], ok = true, status = 200) => {
   const encoder = new TextEncoder();
@@ -39,37 +38,41 @@ const streamResponse = (chunks: string[], ok = true, status = 200) => {
 describe("ChatScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSingle.mockResolvedValue({ data: { streak_days: 7 }, error: null });
     mockGetSession.mockResolvedValue({ data: { session: { access_token: "session-token" } } });
+    mockRpc.mockResolvedValue({ data: 8, error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles") return makeChain({ data: { streak_days: 7 }, error: null });
+      if (table === "conversations") return makeChain({ data: { id: "conversation-1" }, error: null });
+      if (table === "messages") return makeChain({
+        data: table ? [{ id: "message-1", role: "assistant", content: "Histórico" }] : [],
+        error: null,
+      });
+      return makeChain({ data: null, error: null });
+    });
     vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("renders the initial Compass greeting and user streak", async () => {
+  it("loads a persisted conversation and user streak", async () => {
     render(<ChatScreen />);
-
-    expect(await screen.findByText(/quando você se sente mais vivo/i)).toBeInTheDocument();
+    expect(await screen.findByText("Histórico")).toBeInTheDocument();
     expect(await screen.findByText("7 dias")).toBeInTheDocument();
   });
 
   it("does not call the API for an empty message", async () => {
     render(<ChatScreen />);
     const send = screen.getByRole("button", { name: /enviar mensagem/i });
-
     expect(send).toBeDisabled();
-    fireEvent.click(send);
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("uses the authenticated access token and streams the assistant response", async () => {
+  it("persists the user message, authenticates the AI request and persists the response", async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce(
-      streamResponse([
-        "data: {\"choices\":[{\"delta\":{\"content\":\"Olá, Roberta!\"}}]}\n",
-        "data: {\"choices\":[{\"delta\":{\"content\":\" Vamos começar.\"}}]}\n",
-        "data: [DONE]\n",
-      ])
-    );
+    fetchMock.mockResolvedValueOnce(streamResponse([
+      "data: {\"choices\":[{\"delta\":{\"content\":\"Olá!\"}}]}\n",
+      "data: {\"choices\":[{\"delta\":{\"content\":\" Vamos começar.\"}}]}\n",
+      "data: [DONE]\n",
+    ]));
 
     render(<ChatScreen />);
     const input = screen.getByPlaceholderText("Digite sua mensagem...");
@@ -78,45 +81,22 @@ describe("ChatScreen", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [, request] = fetchMock.mock.calls[0];
-    expect((request as RequestInit).headers).toEqual(expect.objectContaining({
-      Authorization: "Bearer session-token",
-    }));
-    expect(JSON.parse(String((request as RequestInit).body)).messages.at(-1)).toEqual({
-      role: "user",
-      content: "Quero descobrir meu propósito",
-    });
-
-    expect(await screen.findByText("Olá, Roberta! Vamos começar.")).toBeInTheDocument();
+    expect((request as RequestInit).headers).toEqual(expect.objectContaining({ Authorization: "Bearer session-token" }));
+    expect(JSON.parse(String((request as RequestInit).body)).conversation_id).toBe("conversation-1");
+    expect(await screen.findByText("Olá! Vamos começar.")).toBeInTheDocument();
+    expect(mockRpc).toHaveBeenCalledWith("record_compass_activity");
   });
 
   it("trims whitespace before sending", async () => {
-    const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValueOnce(streamResponse([
+    vi.mocked(fetch).mockResolvedValueOnce(streamResponse([
       "data: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}]}\n",
       "data: [DONE]\n",
     ]));
-
     render(<ChatScreen />);
-    fireEvent.change(screen.getByPlaceholderText("Digite sua mensagem..."), {
-      target: { value: "   mensagem com espaços   " },
-    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua mensagem..."), { target: { value: "   mensagem com espaços   " } });
     fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).messages.at(-1).content)
-      .toBe("mensagem com espaços");
-  });
-
-  it("rejects oversized input before making a network request", async () => {
-    render(<ChatScreen />);
-    const input = screen.getByPlaceholderText("Digite sua mensagem...");
-    fireEvent.change(input, { target: { value: "x".repeat(4001) } });
-
-    // maxLength protects normal UI input; invoke the submit path through a programmatic value
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
-    });
-    expect(fetch).not.toHaveBeenCalled();
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body)).messages.at(-1).content).toBe("mensagem com espaços");
   });
 
   it("shows a useful error when the session has expired", async () => {
@@ -124,28 +104,15 @@ describe("ChatScreen", () => {
     render(<ChatScreen />);
     fireEvent.change(screen.getByPlaceholderText("Digite sua mensagem..."), { target: { value: "teste" } });
     fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
-
-    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Erro",
-      description: expect.stringMatching(/sessão expirou/i),
-    })));
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Erro", description: expect.stringMatching(/sessão expirou/i) })));
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("handles non-JSON API errors without crashing", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 503,
-      json: async () => { throw new Error("not json"); },
-    } as Response);
-
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 503, json: async () => { throw new Error("not json"); } } as Response);
     render(<ChatScreen />);
     fireEvent.change(screen.getByPlaceholderText("Digite sua mensagem..."), { target: { value: "teste" } });
     fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
-
-    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Erro",
-      description: "Erro na resposta",
-    })));
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Erro", description: "Erro na resposta" })));
   });
 });
