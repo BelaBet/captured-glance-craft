@@ -56,20 +56,49 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const messages = body?.messages;
-    if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
-      return jsonResponse({ error: `Envie entre 1 e ${MAX_MESSAGES} mensagens.` }, 400);
+    const conversationId = body?.conversation_id;
+    if (typeof conversationId !== "string" || conversationId.length > 100) {
+      return jsonResponse({ error: "Conversa inválida." }, 400);
     }
 
-    const validMessages = messages.every((message: unknown) => {
-      if (!message || typeof message !== "object") return false;
-      const item = message as { role?: unknown; content?: unknown };
-      return (item.role === "user" || item.role === "assistant") &&
-        typeof item.content === "string" &&
-        item.content.trim().length > 0 &&
-        item.content.length <= MAX_MESSAGE_LENGTH;
-    });
-    if (!validMessages) return jsonResponse({ error: "Formato de mensagem inválido." }, 400);
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (conversationError) {
+      console.error("conversation lookup failed:", conversationError);
+      return jsonResponse({ error: "Não foi possível validar a conversa." }, 503);
+    }
+    if (!conversation) return jsonResponse({ error: "Conversa não encontrada." }, 404);
+
+    // The client no longer controls the assistant context. Read only messages
+    // persisted under the authenticated user's own conversation.
+    const { data: persistedMessages, error: messagesError } = await supabase
+      .from("messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(MAX_MESSAGES);
+
+    if (messagesError) {
+      console.error("message history lookup failed:", messagesError);
+      return jsonResponse({ error: "Não foi possível carregar o contexto da conversa." }, 503);
+    }
+
+    const messages = (persistedMessages ?? []).reverse();
+    if (messages.length === 0) return jsonResponse({ error: "Conversa sem mensagens." }, 400);
+
+    const validMessages = messages.every((message) =>
+      (message.role === "user" || message.role === "assistant") &&
+      typeof message.content === "string" &&
+      message.content.trim().length > 0 &&
+      message.content.length <= MAX_MESSAGE_LENGTH
+    );
+    if (!validMessages) return jsonResponse({ error: "Histórico de conversa inválido." }, 400);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -115,7 +144,12 @@ Diretrizes:
     if (!response.body) return jsonResponse({ error: "Serviço de IA sem resposta." }, 502);
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-store", "X-Content-Type-Options": "nosniff" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch (e) {
     console.error("chat error:", e);
