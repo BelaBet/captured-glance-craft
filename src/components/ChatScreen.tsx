@@ -9,6 +9,9 @@ interface Message {
   content: string;
 }
 
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_CONTEXT_MESSAGES = 40;
+
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -19,17 +22,15 @@ const ChatScreen = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
-      loadProfile();
-      // Send initial greeting if no messages
-      if (messages.length === 0) {
-        setMessages([
-          {
-            role: "assistant",
-            content: "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.",
-          },
-        ]);
-      }
+    if (!user) return;
+    loadProfile();
+    if (messages.length === 0) {
+      setMessages([
+        {
+          role: "assistant",
+          content: "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.",
+        },
+      ]);
     }
   }, [user]);
 
@@ -38,47 +39,72 @@ const ChatScreen = () => {
   }, [messages]);
 
   const loadProfile = async () => {
+    if (!user) return;
     const { data } = await supabase
       .from("profiles")
       .select("streak_days")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .single();
     if (data) setStreak(data.streak_days);
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    const trimmed = text.trim();
+    if (!trimmed || isLoading || !user) return;
+
+    if (trimmed.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: "Mensagem muito longa",
+        description: `Use no máximo ${MAX_MESSAGE_LENGTH} caracteres.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setInput("");
-    const userMsg: Message = { role: "user", content: text };
-    const allMessages = [...messages, userMsg];
+    const userMsg: Message = { role: "user", content: trimmed };
+    const allMessages = [...messages, userMsg].slice(-MAX_CONTEXT_MESSAGES);
     setMessages(allMessages);
     setIsLoading(true);
 
     let assistantContent = "";
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sua sessão expirou. Entre novamente.");
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compass-chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ messages: allMessages }),
         }
       );
 
       if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error || "Erro na resposta");
+        let errorMessage = "Erro na resposta";
+        try {
+          const err = await resp.json();
+          errorMessage = err.error || errorMessage;
+        } catch {
+          // Keep the generic message when the server response is not JSON.
+        }
+        throw new Error(errorMessage);
       }
 
-      const reader = resp.body!.getReader();
+      if (!resp.body) throw new Error("Resposta do Compass indisponível.");
+
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
@@ -90,7 +116,10 @@ const ChatScreen = () => {
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
+          if (jsonStr === "[DONE]") {
+            streamDone = true;
+            break;
+          }
           try {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
@@ -112,16 +141,22 @@ const ChatScreen = () => {
           }
         }
       }
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    }
 
-    setIsLoading(false);
+      if (!assistantContent) throw new Error("O Compass não retornou uma resposta.");
+    } catch (e: unknown) {
+      toast({
+        title: "Erro",
+        description: e instanceof Error ? e.message : "Não foi possível falar com o Compass.",
+        variant: "destructive",
+      });
+      setMessages((prev) => prev.filter((message, index) => !(index === prev.length - 1 && message.role === "assistant" && !message.content)));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="animate-fade-in pb-[180px]">
-      {/* Header */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full bg-card px-4 sm:px-5 pb-3 pt-5 sm:pt-6 border-b border-border z-40">
         <div className="flex items-center gap-3 p-3 bg-tertiary rounded-xl">
           <Flame size={28} className="text-primary shrink-0" />
@@ -132,66 +167,42 @@ const ChatScreen = () => {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="pt-[114px] sm:pt-[132px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
-
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex gap-2 sm:gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-          >
-            <div
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 ${
-                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
-              }`}
-            >
+          <div key={i} className={`flex gap-2 sm:gap-3 animate-message-slide ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>
               {msg.role === "user" ? <User size={18} className="sm:hidden" /> : <Compass size={18} className="sm:hidden" />}
               {msg.role === "user" ? <User size={20} className="hidden sm:block" /> : <Compass size={20} className="hidden sm:block" />}
             </div>
             <div className="max-w-[85%] sm:max-w-[75%] min-w-0">
-              <div
-                className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[20px] text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-tertiary text-foreground"
-                }`}
-              >
+              <div className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[20px] text-[14px] sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-tertiary text-foreground"}`}>
                 {msg.content}
               </div>
-
             </div>
           </div>
         ))}
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex gap-3">
-            <div className="w-10 h-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0">
-              <Compass size={20} />
-            </div>
-            <div className="px-5 py-4 rounded-[20px] bg-tertiary">
-              <Loader2 size={20} className="animate-spin text-muted-foreground" />
-            </div>
+            <div className="w-10 h-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0"><Compass size={20} /></div>
+            <div className="px-5 py-4 rounded-[20px] bg-tertiary"><Loader2 size={20} className="animate-spin text-muted-foreground" /></div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="fixed bottom-[92px] left-1/2 -translate-x-1/2 max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] w-full px-4 sm:px-6 lg:px-[30px] py-3 sm:py-4 bg-card border-t border-border">
         <div className="flex gap-2 sm:gap-3 items-center">
           <input
             type="text"
             value={input}
+            maxLength={MAX_MESSAGE_LENGTH}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
             placeholder="Digite sua mensagem..."
             disabled={isLoading}
             className="flex-1 py-3.5 px-5 border border-border rounded-[25px] bg-tertiary text-foreground text-[15px] font-sans transition-all duration-300 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
           />
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={isLoading || !input.trim()}
-            className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-all duration-300 hover:bg-accent-hover hover:scale-105 disabled:opacity-50"
-          >
+          <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()} aria-label="Enviar mensagem" className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-all duration-300 hover:bg-accent-hover hover:scale-105 disabled:opacity-50">
             <Send size={20} />
           </button>
         </div>
