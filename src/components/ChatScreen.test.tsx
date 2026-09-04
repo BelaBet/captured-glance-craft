@@ -13,12 +13,13 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: { getSession: mockGetSession }, from: mockFrom, rpc: mockRpc },
 }));
 
-const makeChain = (result: unknown) => {
-  const chain: Record<string, unknown> = {};
+const makeChain = (result: unknown, insertedResult?: unknown) => {
+  const chain: Record<string, any> = {};
+  let inserting = false;
   for (const method of ["select", "eq", "order", "limit"]) chain[method] = vi.fn(() => chain);
-  chain.single = vi.fn().mockResolvedValue(result);
+  chain.single = vi.fn().mockImplementation(() => Promise.resolve(inserting ? insertedResult ?? result : result));
   chain.maybeSingle = vi.fn().mockResolvedValue(result);
-  chain.insert = vi.fn(() => chain);
+  chain.insert = vi.fn(() => { inserting = true; return chain; });
   chain.update = vi.fn(() => chain);
   chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve);
   return chain;
@@ -43,10 +44,10 @@ describe("ChatScreen", () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === "profiles") return makeChain({ data: { streak_days: 7 }, error: null });
       if (table === "conversations") return makeChain({ data: { id: "conversation-1" }, error: null });
-      if (table === "messages") return makeChain({
-        data: table ? [{ id: "message-1", role: "assistant", content: "Histórico" }] : [],
-        error: null,
-      });
+      if (table === "messages") return makeChain(
+        { data: [{ id: "message-1", role: "assistant", content: "Histórico" }], error: null },
+        { data: { id: "user-message-1", role: "user", content: "Quero descobrir meu propósito" }, error: null },
+      );
       return makeChain({ data: null, error: null });
     });
     vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
@@ -59,7 +60,7 @@ describe("ChatScreen", () => {
     expect(await screen.findByText("7 dias")).toBeInTheDocument();
   });
 
-  it("does not call the API for an empty message", async () => {
+  it("does not call the API for an empty message", () => {
     render(<ChatScreen />);
     const send = screen.getByRole("button", { name: /enviar mensagem/i });
     expect(send).toBeDisabled();
@@ -75,8 +76,7 @@ describe("ChatScreen", () => {
     ]));
 
     render(<ChatScreen />);
-    const input = screen.getByPlaceholderText("Digite sua mensagem...");
-    fireEvent.change(input, { target: { value: "Quero descobrir meu propósito" } });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua mensagem..."), { target: { value: "Quero descobrir meu propósito" } });
     fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
