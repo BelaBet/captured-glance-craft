@@ -3,51 +3,98 @@ import { Flame, Compass, User, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+const GREETING =
+  "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.";
+
 const ChatScreen = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [streak, setStreak] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      loadProfile();
-      // Send initial greeting if no messages
-      if (messages.length === 0) {
-        setMessages([
-          {
-            role: "assistant",
-            content: "Olá! 👋 Vamos conversar sobre algo importante hoje: quando você se sente mais vivo e presente? Conte-me sobre um momento recente em que você se sentiu verdadeiramente engajado.",
-          },
-        ]);
+    if (!user) return;
+    let cancelled = false;
+
+    const load = async () => {
+      setLoadingHistory(true);
+
+      const [{ data: profile }, { data: conversation }] = await Promise.all([
+        supabase.from("profiles").select("streak_days").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("conversations")
+          .select("id")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (cancelled) return;
+      if (profile) setStreak(profile.streak_days ?? 0);
+
+      if (conversation) {
+        conversationIdRef.current = conversation.id;
+        const { data: history } = await supabase
+          .from("messages")
+          .select("role, content")
+          .eq("conversation_id", conversation.id)
+          .order("created_at");
+        if (cancelled) return;
+        if (history && history.length > 0) {
+          setMessages(history.map((m) => ({ role: m.role as Message["role"], content: m.content })));
+          setLoadingHistory(false);
+          return;
+        }
       }
-    }
+
+      setMessages([{ role: "assistant", content: GREETING }]);
+      setLoadingHistory(false);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const loadProfile = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("streak_days")
-      .eq("user_id", user!.id)
+  const ensureConversation = async () => {
+    if (conversationIdRef.current) return conversationIdRef.current;
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({ user_id: user!.id })
+      .select("id")
       .single();
-    if (data) setStreak(data.streak_days);
+    if (error) throw error;
+    conversationIdRef.current = data.id;
+    // Persist the greeting so the thread reads naturally on reload.
+    await supabase.from("messages").insert({
+      conversation_id: data.id,
+      user_id: user!.id,
+      role: "assistant",
+      content: GREETING,
+    });
+    return data.id;
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || !user) return;
     setInput("");
     const userMsg: Message = { role: "user", content: text };
     const allMessages = [...messages, userMsg];
@@ -57,13 +104,28 @@ const ChatScreen = () => {
     let assistantContent = "";
 
     try {
+      const conversationId = await ensureConversation();
+
+      const { error: userMsgError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        user_id: user.id,
+        role: "user",
+        content: text,
+      });
+      if (userMsgError) throw userMsgError;
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Entre novamente.");
+
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compass-chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ messages: allMessages }),
         }
@@ -112,8 +174,28 @@ const ChatScreen = () => {
           }
         }
       }
+
+      if (assistantContent.trim()) {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          role: "assistant",
+          content: assistantContent,
+        });
+      }
+
+      const { data: newStreak } = await supabase.rpc("touch_streak");
+      if (typeof newStreak === "number") setStreak(newStreak);
+      queryClient.invalidateQueries({ queryKey: ["stats", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+      // Give the message back to the user instead of losing it.
+      setMessages((prev) => {
+        const idx = prev.map((m) => m.content).lastIndexOf(text);
+        return idx === -1 ? prev : prev.slice(0, idx);
+      });
+      setInput((current) => current || text);
     }
 
     setIsLoading(false);
@@ -134,6 +216,11 @@ const ChatScreen = () => {
 
       {/* Messages */}
       <div className="pt-[114px] sm:pt-[132px] px-4 sm:px-6 lg:px-[30px] flex flex-col gap-4 sm:gap-5 mb-[120px]">
+        {loadingHistory && (
+          <div className="flex justify-center py-8">
+            <Loader2 size={22} className="animate-spin text-muted-foreground" />
+          </div>
+        )}
 
         {messages.map((msg, i) => (
           <div
