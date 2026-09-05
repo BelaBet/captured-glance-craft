@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788615926734,
+      "tag": "0000_streak_and_action_delete",
+      "breakpoints": true
+    }
+  ]
+}
