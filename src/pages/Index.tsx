@@ -10,9 +10,14 @@ import AuthPage from "@/pages/AuthPage";
 
 type Screen = "onboarding" | "chat" | "dashboard" | "progress" | "profile";
 
+const ONBOARDED_KEY = "compass-onboarded";
+
 const Index = () => {
   const { user, loading, isRecovery } = useAuth();
-  const [screen, setScreen] = useState<Screen>("onboarding");
+  const [screen, setScreen] = useState<Screen>(() =>
+    typeof window !== "undefined" && localStorage.getItem(ONBOARDED_KEY) ? "chat" : "onboarding"
+  );
+
 
   if (loading) {
     return (
