@@ -33,7 +33,15 @@ const Index = () => {
 
   return (
     <div className="max-w-[430px] sm:max-w-[480px] lg:max-w-[520px] mx-auto bg-card min-h-screen relative shadow-[0_0_60px_rgba(0,0,0,0.06)]">
-      {screen === "onboarding" && <OnboardingScreen onStart={() => setScreen("chat")} />}
+      {screen === "onboarding" && (
+        <OnboardingScreen
+          onStart={() => {
+            localStorage.setItem(ONBOARDED_KEY, "1");
+            setScreen("chat");
+          }}
+        />
+      )}
+
       {screen === "chat" && <ChatScreen />}
       {screen === "dashboard" && <DashboardScreen />}
       {screen === "progress" && <ProgressScreen />}
