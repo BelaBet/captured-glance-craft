@@ -154,23 +154,46 @@ const ProfileScreen = () => {
       <div className="bg-gradient-to-br from-accent to-primary text-primary-foreground p-5 sm:p-7 rounded-[20px] mb-8">
         <h3 className="font-serif text-xl sm:text-[22px] mb-2">Compass Pro</h3>
         <p className="opacity-90 mb-5 text-sm sm:text-base">Conversas ilimitadas • Insights avançados • Suporte prioritário</p>
-        <button className="w-full bg-card text-primary py-4 sm:py-[18px] rounded-full font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          Gerenciar assinatura
-        </button>
-
+        <div className="w-full bg-card/90 text-primary py-3.5 rounded-full font-medium text-center text-sm">
+          Assinaturas em breve
+        </div>
       </div>
 
       <Section icon={<Settings size={20} className="text-primary" />} title="Configurações">
-        {settingsItems.map((item) => (
-          <SettingItem key={item.title} {...item} />
-        ))}
+        <div className="flex justify-between items-center gap-3 p-4 sm:p-5 bg-tertiary rounded-2xl mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold mb-1 text-sm sm:text-[15px] font-sans">Horário preferido</div>
+            <div className="text-xs sm:text-[13px] text-muted-foreground">Melhor momento para refletir</div>
+          </div>
+          <input
+            type="time"
+            value={profile?.preferred_time?.slice(0, 5) ?? "09:00"}
+            onChange={(e) => handleSaveTime(e.target.value)}
+            className="bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="w-full flex justify-between items-center gap-3 p-4 sm:p-5 bg-tertiary rounded-2xl mb-3 text-left transition-transform duration-300 hover:translate-x-1 disabled:opacity-60"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold mb-1 text-sm sm:text-[15px] font-sans">Exportar histórico</div>
+            <div className="text-xs sm:text-[13px] text-muted-foreground">Baixe suas conversas e insights</div>
+          </div>
+          <ChevronRight size={20} className="text-text-tertiary" />
+        </button>
+
+        <SoonItem title="Notificações" desc="Lembretes de conversas diárias" />
+        <SoonItem title="Privacidade" desc="Gerencie seus dados" />
       </Section>
 
       <Section icon={<Info size={20} className="text-primary" />} title="Suporte">
-        {supportItems.map((item) => (
-          <SettingItem key={item.title} {...item} />
-        ))}
+        <SoonItem title="Central de ajuda" desc="Dúvidas frequentes" />
+        <SoonItem title="Fale conosco" desc="Suporte via email" />
       </Section>
+
 
       <button
         onClick={signOut}
