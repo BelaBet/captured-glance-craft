@@ -30,7 +30,7 @@ const DashboardScreen = () => {
   ];
 
   const activeNodes = Math.min(4, Math.max(1, insights.data?.length ?? 0 ? insights.data!.length : 1));
-  const canGenerate = (stats.data?.messages ?? 0) >= 4;
+  const canGenerate = (stats.data?.messages ?? 0) >= 2;
 
   const generateInsight = async () => {
     setGenerating(true);
