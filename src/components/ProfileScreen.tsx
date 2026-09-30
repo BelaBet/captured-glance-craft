@@ -19,6 +19,63 @@ const ProfileScreen = () => {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleSaveTime = async (value: string) => {
+    if (!user) return;
+    setProfile((p) => (p ? { ...p, preferred_time: value } : p));
+    const { error } = await supabase
+      .from("profiles")
+      .update({ preferred_time: value })
+      .eq("user_id", user.id);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Horário salvo!" });
+    }
+  };
+
+  const handleExport = async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      const [{ data: messages, error: me }, { data: insights, error: ie }, { data: goals, error: ge }] =
+        await Promise.all([
+          supabase.from("messages").select("role, content, created_at").order("created_at"),
+          supabase.from("insights").select("title, content, created_at").order("created_at"),
+          supabase.from("goals").select("title, status, created_at").order("created_at"),
+        ]);
+      if (me || ie || ge) throw me || ie || ge;
+
+      const lines = [
+        "# Meu histórico no Compass",
+        "",
+        "## Conversas",
+        ...(messages ?? []).map(
+          (m) => `[${new Date(m.created_at).toLocaleString("pt-BR")}] ${m.role === "user" ? "Você" : "Compass"}: ${m.content}`
+        ),
+        "",
+        "## Insights",
+        ...(insights ?? []).map((i) => `- ${i.title}: ${i.content}`),
+        "",
+        "## Metas",
+        ...(goals ?? []).map((g) => `- ${g.title} (${g.status})`),
+      ];
+
+      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "compass-historico.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Histórico exportado!" });
+    } catch (e: any) {
+      toast({ title: "Erro ao exportar", description: e?.message, variant: "destructive" });
+    }
+    setExporting(false);
+  };
+
 
   useEffect(() => {
     if (!user) return;
