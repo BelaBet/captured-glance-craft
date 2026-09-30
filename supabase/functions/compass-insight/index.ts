@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       .limit(40);
     if (msgError) return json({ error: msgError.message }, 400);
 
-    if (!messages || messages.length < 4) {
+    if (!messages || messages.length < 2) {
       return json({ error: "Converse um pouco mais para gerar um insight." }, 400);
     }
 
