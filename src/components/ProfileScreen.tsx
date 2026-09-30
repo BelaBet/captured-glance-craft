@@ -259,15 +259,17 @@ const Section = ({ icon, title, children }: { icon: React.ReactNode; title: stri
   </div>
 );
 
-const SettingItem = ({ title, desc }: { title: string; desc: string }) => (
-  <div className="flex justify-between items-center gap-3 p-4 sm:p-5 bg-tertiary rounded-2xl mb-3 cursor-pointer transition-transform duration-300 hover:translate-x-1">
+const SoonItem = ({ title, desc }: { title: string; desc: string }) => (
+  <div className="flex justify-between items-center gap-3 p-4 sm:p-5 bg-tertiary/60 rounded-2xl mb-3">
     <div className="flex-1 min-w-0">
-      <div className="font-semibold mb-1 text-sm sm:text-[15px] font-sans">{title}</div>
+      <div className="font-semibold mb-1 text-sm sm:text-[15px] font-sans text-muted-foreground">{title}</div>
       <div className="text-xs sm:text-[13px] text-muted-foreground">{desc}</div>
     </div>
-
-    <ChevronRight size={20} className="text-text-tertiary" />
+    <span className="text-[11px] px-2.5 py-1 rounded-xl bg-border text-muted-foreground whitespace-nowrap">
+      Em breve
+    </span>
   </div>
+
 );
 
 export default ProfileScreen;
