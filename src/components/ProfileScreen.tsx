@@ -5,17 +5,6 @@ import { UserCircle, Settings, Info, ChevronRight, LogOut, Camera, Pencil, Check
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
-const settingsItems = [
-  { title: "Notificações", desc: "Lembretes de conversas diárias" },
-  { title: "Privacidade", desc: "Gerencie seus dados" },
-  { title: "Horário preferido", desc: "Melhor momento para reflexão" },
-  { title: "Exportar histórico", desc: "Baixe suas conversas e insights" },
-];
-
-const supportItems = [
-  { title: "Central de ajuda", desc: "Dúvidas frequentes" },
-  { title: "Fale conosco", desc: "Suporte via email" },
-];
 
 const ProfileScreen = () => {
   const { user, signOut } = useAuth();
